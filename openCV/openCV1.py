@@ -41,16 +41,17 @@ while True:
 
     # rectangual-circle frames,corner,corner/radius, BGR, thickness(-1 for fill shape)
     xAxis=340+1
-    frame=cv2.rectangle(frame,(xAxis+3q0,100),(400,170),(255,0,0),6)
+    frame=cv2.rectangle(frame,(xAxis+30,100),(400,170),(255,0,0),6)
     
     # frame=cv2.circle(frame,(340,240),50,(0,0,255),-1)
+
     # PUT TEXT 
-    # fnt=cv2.FONT_HERSHEY_DUPLEX
-    # frame=cv2.putText(frame,"My First Text", (300,300),fnt,1.5,(112,0,255),2)
-    # # PUT LINE
-    # frame=cv2.line(frame,(10,10),(630,470),(0,0,44),4)
+    fnt=cv2.FONT_HERSHEY_DUPLEX
+    frame=cv2.putText(frame,"My First Text", (300,300),fnt,1.5,(112,0,255),2)
+   # # PUT LINE
+    frame=cv2.line(frame,(10,10),(630,470),(0,0,44),4)
     # # PUT ARROW
-    # frame=cv2.arrowedLine(frame,(10,470),(430,250),(44,75,142),2)
+    frame=cv2.arrowedLine(frame,(10,470),(430,250),(44,75,142),2)
 
     # ============Prometheus==============
 
