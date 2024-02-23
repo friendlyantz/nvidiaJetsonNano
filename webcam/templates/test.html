@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OnlyCams</title>
+</head>
+<body>
+    <h1>OnlyCams</h1>
+    <ul>
+        {% for picture in picture_files %}
+	    <li><img src="{{ url_for('render_picture', filename=picture) }}" alt="{{ picture }}"></li>
+        {% endfor %}
+
+	<li><a href="http://www.baywx.com.au/stk.html">BayWX Graph St Kilda</a></li>
+	<li><a href="https://www.rmys.com.au/live-webcam/">RMYS WebCams</a></li>
+    </ul>
+</body>
+</html>
+
