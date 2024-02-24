@@ -56,14 +56,9 @@ def captureFrames():
             box_w = int(0.2*frame_w)
             box_h = int(0.2*frame_h)
 
-            posX = posX + dx
-            posY = posY + dy
-            if posX+box_w>=frame_w or posX <= 0:
-                dx=dx*(-1)
-                posX = posX + dx + dx
-            if posY+box_h>=frame_h or posY <= 0:
-                dy=dy*(-1)
-                posY = posY + dy + dy
+            posX, dx = increment(posX, dx, box_w, frame_w)
+            posY, dy = increment(posY, dy, box_h, frame_h)
+
             draw_rectangle(frame, posX, posY, box_w, box_h)
 
             watermark(frame)
@@ -76,19 +71,28 @@ def captureFrames():
 
     video_capture.release()
 
+def increment(posX, dx, box_w, frame_w):
+    posX = posX + dx
+    if posX+box_w>=frame_w or posX <= 0:
+        dx=dx*(-1)
+        posX = posX + dx + dx
+    return posX, dx
+
 def crop(frame):
     return frame[CROP_H, CROP_W] 
 
 def draw_rectangle(frame, posX, posY, width, height):
-    roi = frame[posY:posY+height, posX:posX+width].copy() # height, width
+    height_range = slice(posY,posY+height)
+    width_range = slice(posX,posX+width)
+    roi = frame[height_range, width_range].copy() # height, width
     roiGray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
     roiGray = cv2.cvtColor(roiGray, cv2.COLOR_GRAY2BGR)
-    bitwise_and = cv2.bitwise_and(frame[posY:posY+height, posX:posX+width], roiGray)
-    bitwise_or = cv2.bitwise_or(frame[posY:posY+height, posX:posX+width], roiGray)
-    bitwise_xor = cv2.bitwise_xor(frame[posY:posY+height, posX:posX+width], roiGray)
-    frame[posY:posY+height, posX:posX+width]=bitwise_and
+    bitwise_and = cv2.bitwise_and(frame[height_range, width_range], roiGray)
+    bitwise_or = cv2.bitwise_or(frame[height_range, width_range], roiGray)
+    bitwise_xor = cv2.bitwise_xor(frame[height_range, width_range], roiGray)
+    frame[height_range, width_range]=bitwise_and
     frame = cv2.rectangle(frame, (posX, posY), (posX+width, posY+height), (0,0,255))
-        
+
 def save_to_disk(frame):
     global last_minute
     if datetime.datetime.now().minute != last_minute:

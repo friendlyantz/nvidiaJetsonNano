@@ -24,9 +24,7 @@ dispW=1440
 dispH=1080
 # dispW=960
 # dispH=616
-CROP_H = slice(300, 750)
-CROP_W = slice(0,1000)
-GSTREAMER_PIPELINE = 'nvarguscamerasrc ! video/x-raw(memory:NVMM), width=1920, height=1080, format=(string)NV12, framerate=1/1 ! nvvidconv flip-method='+str(flip)+' ! video/x-raw, width='+str(dispW)+', height='+str(dispH)+', format=(string)BGRx ! videoconvert ! video/x-raw, format=(string)BGR ! appsink wait-on-eos=false max-buffers=1 drop=True'
+GSTREAMER_PIPELINE = 'nvarguscamerasrc ! video/x-raw(memory:NVMM), width=1920, height=1080, format=(string)NV12, framerate=21/1 ! nvvidconv flip-method='+str(flip)+' ! video/x-raw, width='+str(dispW)+', height='+str(dispH)+', format=(string)BGRx ! videoconvert ! video/x-raw, format=(string)BGR ! appsink wait-on-eos=false max-buffers=1 drop=True'
 
 # Create the Flask object for the application
 app = Flask(__name__)
@@ -37,10 +35,6 @@ def captureFrames():
     # Video capturing from OpenCV
     video_capture = cv2.VideoCapture(GSTREAMER_PIPELINE, cv2.CAP_GSTREAMER)
 
-    posX=10
-    posY=50
-    dx=35
-    dy=2
     while True and video_capture.isOpened():
         return_key, frame = video_capture.read()
         if not return_key:
@@ -49,45 +43,22 @@ def captureFrames():
         # Create a copy of the frame and store it in the global variable,
         # with thread safe access
         with thread_lock:
-            frame = crop(frame)
+            # resized_frame = frame[200:800, 0:1100]
+            roi = frame[700:800, 0:1100].copy() # height, width
+            roiGray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+            roiGray = cv2.cvtColor(roiGray, cv2.COLOR_GRAY2BGR)
+            frame[700:800, 0:1100]=roiGray
+            cropped_frame = frame[200:800, 0:1100] 
 
-            frame_w = len(frame[0])
-            frame_h = len(frame)
-            box_w = int(0.2*frame_w)
-            box_h = int(0.2*frame_h)
-
-            posX = posX + dx
-            posY = posY + dy
-            if posX+box_w>=frame_w or posX <= 0:
-                dx=dx*(-1)
-                posX = posX + dx + dx
-            if posY+box_h>=frame_h or posY <= 0:
-                dy=dy*(-1)
-                posY = posY + dy + dy
-            draw_rectangle(frame, posX, posY, box_w, box_h)
-
-            watermark(frame)
-            save_to_disk(frame)
-            video_frame = frame.copy()
+            watermark(cropped_frame)
+            save_to_disk(cropped_frame)
+            video_frame = cropped_frame.copy()
         
         key = cv2.waitKey(30) & 0xff
         if key == 27:
             break
 
     video_capture.release()
-
-def crop(frame):
-    return frame[CROP_H, CROP_W] 
-
-def draw_rectangle(frame, posX, posY, width, height):
-    roi = frame[posY:posY+height, posX:posX+width].copy() # height, width
-    roiGray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-    roiGray = cv2.cvtColor(roiGray, cv2.COLOR_GRAY2BGR)
-    bitwise_and = cv2.bitwise_and(frame[posY:posY+height, posX:posX+width], roiGray)
-    bitwise_or = cv2.bitwise_or(frame[posY:posY+height, posX:posX+width], roiGray)
-    bitwise_xor = cv2.bitwise_xor(frame[posY:posY+height, posX:posX+width], roiGray)
-    frame[posY:posY+height, posX:posX+width]=bitwise_and
-    frame = cv2.rectangle(frame, (posX, posY), (posX+width, posY+height), (0,0,255))
         
 def save_to_disk(frame):
     global last_minute

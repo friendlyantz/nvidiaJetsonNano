@@ -83,10 +83,7 @@ def draw_rectangle(frame, posX, posY, width, height):
     roi = frame[posY:posY+height, posX:posX+width].copy() # height, width
     roiGray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
     roiGray = cv2.cvtColor(roiGray, cv2.COLOR_GRAY2BGR)
-    bitwise_and = cv2.bitwise_and(frame[posY:posY+height, posX:posX+width], roiGray)
-    bitwise_or = cv2.bitwise_or(frame[posY:posY+height, posX:posX+width], roiGray)
-    bitwise_xor = cv2.bitwise_xor(frame[posY:posY+height, posX:posX+width], roiGray)
-    frame[posY:posY+height, posX:posX+width]=bitwise_and
+    frame[posY:posY+height, posX:posX+width]=roiGray
     frame = cv2.rectangle(frame, (posX, posY), (posX+width, posY+height), (0,0,255))
         
 def save_to_disk(frame):
