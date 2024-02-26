@@ -56,15 +56,12 @@ def captureFrames():
             box_w = int(0.2*frame_w)
             box_h = int(0.2*frame_h)
 
-            posX = posX + dx
-            posY = posY + dy
-            if posX+box_w>=frame_w or posX <= 0:
-                dx=dx*(-1)
-                posX = posX + dx + dx
-            if posY+box_h>=frame_h or posY <= 0:
-                dy=dy*(-1)
-                posY = posY + dy + dy
+            posX, dx = increment(posX, dx, box_w, frame_w)
+            posY, dy = increment(posY, dy, box_h, frame_h)
+
             draw_rectangle(frame, posX, posY, box_w, box_h)
+
+            frame = mask(frame)
 
             watermark(frame)
             save_to_disk(frame)
@@ -76,19 +73,50 @@ def captureFrames():
 
     video_capture.release()
 
+
+def mask(frame):
+    frame_w = len(frame[0])
+    frame_h = len(frame)
+    # masking
+    cvLogo=cv2.imread('/home/anton/Desktop/cv.jpg')
+    cvLogo=cv2.resize(cvLogo, (frame_w,frame_h))
+    cvLogoGray=cv2.cvtColor(cvLogo, cv2.COLOR_BGR2GRAY)
+
+    # create masks
+    #BG
+    _,BGMask = cv2.threshold(cvLogoGray, 225, 255, cv2.THRESH_BINARY)
+    background = cv2.bitwise_and(frame, frame, mask=BGMask)
+
+    #FG
+    blended = cv2.addWeighted(frame, 0.9, cvLogo, 0.1, 0)
+    FGMask = cv2.bitwise_not(BGMask)
+    foreground = cv2.bitwise_and(blended, blended, mask=FGMask)
+
+    # add BG + FG
+    return cv2.add(background, foreground)
+
+def increment(posX, dx, box_w, frame_w):
+    posX = posX + dx
+    if posX+box_w>=frame_w or posX <= 0:
+        dx=dx*(-1)
+        posX = posX + dx + dx
+    return posX, dx
+
 def crop(frame):
     return frame[CROP_H, CROP_W] 
 
 def draw_rectangle(frame, posX, posY, width, height):
-    roi = frame[posY:posY+height, posX:posX+width].copy() # height, width
+    height_range = slice(posY,posY+height)
+    width_range = slice(posX,posX+width)
+    roi = frame[height_range, width_range].copy() # height, width
     roiGray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
     roiGray = cv2.cvtColor(roiGray, cv2.COLOR_GRAY2BGR)
-    bitwise_and = cv2.bitwise_and(frame[posY:posY+height, posX:posX+width], roiGray)
-    bitwise_or = cv2.bitwise_or(frame[posY:posY+height, posX:posX+width], roiGray)
-    bitwise_xor = cv2.bitwise_xor(frame[posY:posY+height, posX:posX+width], roiGray)
-    frame[posY:posY+height, posX:posX+width]=bitwise_and
+    bitwise_and = cv2.bitwise_and(frame[height_range, width_range], roiGray)
+    bitwise_or = cv2.bitwise_or(frame[height_range, width_range], roiGray)
+    bitwise_xor = cv2.bitwise_xor(frame[height_range, width_range], roiGray)
+    frame[height_range, width_range]=bitwise_and
     frame = cv2.rectangle(frame, (posX, posY), (posX+width, posY+height), (0,0,255))
-        
+
 def save_to_disk(frame):
     global last_minute
     if datetime.datetime.now().minute != last_minute:
@@ -100,6 +128,9 @@ def watermark(frame):
     fnt=cv2.FONT_HERSHEY_DUPLEX
     frame=cv2.putText(frame, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), (30,50),fnt,1.5,(112,0,255),2)
     frame=cv2.putText(frame, "powered by friendlyantz", (30, 100),fnt,1.0,(112,0,55),1)
+
+    # rectangual-circle frames,corner,corner/radius, BGR, thickness(-1 for fill shape)
+    frame=cv2.rectangle(frame,(30, len(frame) - 10),(850,len(frame) - 50),(175,175,175),-1)
     frame=cv2.putText(frame, "buy CEO a beer --> PayID: friendlyantz@up.me", (30, len(frame) - 20),fnt,1.0,(255,127,0),2)
 
 def blur(frame):
